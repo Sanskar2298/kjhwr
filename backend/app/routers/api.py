@@ -152,12 +152,14 @@ async def get_accuracy_summary(
 
 @router.get("/accuracy/by-horizon", response_model=List[HorizonBucketBreakdown], summary="Error breakdown by horizon")
 async def get_accuracy_by_horizon(
-    start: date = Query(date(2026, 1, 1)),
-    end: date = Query(date(2026, 1, 31)),
-    cutoff_hour: str = Query("09:00"),
+    start: date = Query(date(2026, 1, 1), description="Start delivery date"),
+    end: date = Query(date(2026, 1, 31), description="End delivery date"),
+    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"),
     dm: DataManager = Depends(get_data_manager),
 ) -> List[HorizonBucketBreakdown]:
     """Breakdown of forecast errors by lead horizon bucket."""
+    if start > end:
+        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     breakdowns = compute_error_breakdowns(aligned_df)
     res = []
@@ -178,12 +180,14 @@ async def get_accuracy_by_horizon(
 
 @router.get("/accuracy/by-hour", response_model=List[HourOfDayBreakdown], summary="Error breakdown by hour of day")
 async def get_accuracy_by_hour(
-    start: date = Query(date(2026, 1, 1)),
-    end: date = Query(date(2026, 1, 31)),
-    cutoff_hour: str = Query("09:00"),
+    start: date = Query(date(2026, 1, 1), description="Start delivery date"),
+    end: date = Query(date(2026, 1, 31), description="End delivery date"),
+    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"),
     dm: DataManager = Depends(get_data_manager),
 ) -> List[HourOfDayBreakdown]:
     """Breakdown of forecast errors by clock hour of delivery (0-23 UTC)."""
+    if start > end:
+        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     breakdowns = compute_error_breakdowns(aligned_df)
     res = []
@@ -204,12 +208,14 @@ async def get_accuracy_by_hour(
 
 @router.get("/accuracy/by-wind-level", response_model=List[WindLevelBreakdown], summary="Error breakdown by wind regime")
 async def get_accuracy_by_wind_level(
-    start: date = Query(date(2026, 1, 1)),
-    end: date = Query(date(2026, 1, 31)),
-    cutoff_hour: str = Query("09:00"),
+    start: date = Query(date(2026, 1, 1), description="Start delivery date"),
+    end: date = Query(date(2026, 1, 31), description="End delivery date"),
+    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"),
     dm: DataManager = Depends(get_data_manager),
 ) -> List[WindLevelBreakdown]:
     """Breakdown of forecast errors by actual wind generation level."""
+    if start > end:
+        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     breakdowns = compute_error_breakdowns(aligned_df)
     res = []
@@ -231,12 +237,14 @@ async def get_accuracy_by_wind_level(
 
 @router.get("/accuracy/daily", response_model=List[DailyBreakdown], summary="Daily accuracy metrics")
 async def get_accuracy_daily(
-    start: date = Query(date(2026, 1, 1)),
-    end: date = Query(date(2026, 1, 31)),
-    cutoff_hour: str = Query("09:00"),
+    start: date = Query(date(2026, 1, 1), description="Start delivery date"),
+    end: date = Query(date(2026, 1, 31), description="End delivery date"),
+    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"),
     dm: DataManager = Depends(get_data_manager),
 ) -> List[DailyBreakdown]:
     """Daily time series of accuracy metrics for trend visualization."""
+    if start > end:
+        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     breakdowns = compute_error_breakdowns(aligned_df)
     res = []
