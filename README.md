@@ -36,19 +36,43 @@ npm install
 cd ..
 ```
 
-### 2. Running with Docker Compose
+### 2. Running with Production Docker Setup
+
+The application features a production-ready, multi-stage containerized architecture:
+- **Backend**: Python 3.11-slim, non-root user `appuser` (UID 1001), healthcheck via `curl -f /api/health`, read-only dataset mounting.
+- **Frontend**: Multi-stage build (Node 22-alpine -> Nginx alpine reverse proxy) serving optimized static assets and routing `/api/` upstream to the backend.
+
 ```bash
-make dev
-# Frontend accessible at http://localhost:5173
-# Backend accessible at http://localhost:8000 (Docs: http://localhost:8000/docs)
+# Build and launch both containers in detached mode
+docker compose up --build -d
+
+# Check running status and health checks
+docker compose ps
+
+# View real-time logs
+docker compose logs -f
 ```
 
-### 3. Running Ingestion
+**Access Endpoints:**
+- **Web Dashboard**: [http://localhost](http://localhost) (Port 80)
+- **FastAPI Backend Directly**: [http://localhost:8000](http://localhost:8000)
+- **Interactive Swagger OpenAPI Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Healthcheck**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
+
+### 3. Running Data Ingestion & Analysis CLI
 ```bash
-make ingest
+# Ingest FUELHH and WINDFOR data from Elexon BMRS
+python scripts/ingest.py
+
+# Run standalone statistical evaluation
+python scripts/run_analysis.py
 ```
 
 ### 4. Running Tests
 ```bash
-make test
+# Run backend pytest suite (23 unit & integration tests, >90% coverage)
+python -m pytest backend/tests -v
+
+# Run frontend vitest suite (8 unit tests)
+cd frontend && npm test
 ```
