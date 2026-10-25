@@ -27,21 +27,20 @@ export const MetricTooltip: React.FC<MetricTooltipProps> = ({
       aria-label={`${label} details`}
     >
       {children}
-      <HelpCircle className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 transition-colors" />
+      <HelpCircle className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover:text-[var(--color-forecast)] transition-colors" />
 
       {isVisible && (
         <div
           role="tooltip"
-          className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-slate-900 border border-slate-700 text-xs shadow-xl text-slate-200 pointer-events-none animate-in fade-in zoom-in-95 duration-150"
+          className="absolute z-50 bottom-full left-0 mb-1.5 w-64 p-2.5 rounded-[4px] bg-[var(--bg-elevated)] border border-[var(--border-strong)] text-[12px] shadow-sm text-[var(--text-primary)] pointer-events-none"
         >
-          <div className="font-semibold text-cyan-400 mb-1">{label}</div>
-          <div className="text-slate-300 leading-relaxed">{explanation}</div>
+          <div className="font-semibold text-[var(--color-forecast)] mb-1">{label}</div>
+          <div className="text-[var(--text-secondary)] leading-normal">{explanation}</div>
           {formula && (
-            <div className="mt-2 pt-1 border-t border-slate-800 text-[11px] font-mono text-amber-300">
+            <div className="mt-1.5 pt-1.5 border-t border-[var(--border-subtle)] text-[11px] tabular-nums text-[var(--color-over-forecast)]">
               {formula}
             </div>
           )}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
         </div>
       )}
     </div>

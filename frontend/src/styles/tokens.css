@@ -1,0 +1,92 @@
+/**
+ * Design Tokens for UK Day-Ahead Power Trading Desk.
+ * Strict neutral graphite/slate base with a single cobalt/sky accent.
+ * Complete light and dark themes with tabular-num typography.
+ */
+
+:root {
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Type Scale */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+
+  /* Line Heights */
+  --leading-tight: 1.2;
+  --leading-normal: 1.45;
+
+  /* Spacing Grid (4/8px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Geometry */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --border-width: 1px;
+}
+
+/* Light Theme Variables */
+:root[data-theme='light'] {
+  --bg-app: #f6f8fa;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f3f5;
+  --bg-subtle: #eaeef2;
+
+  --border-subtle: #d0d7de;
+  --border-strong: #afb8c1;
+
+  --text-primary: #1f2328;
+  --text-secondary: #57606a;
+  --text-muted: #6e7781;
+
+  /* Semantic Data Colors - Deep Teal (#0f766e, contrast > 4.5:1 against white/f6f8fa) */
+  --color-forecast: #0f766e;
+  --color-actual: #0f172a;             /* Near-black Ground Truth */
+  --color-uncertainty-fill: rgba(15, 118, 110, 0.12);
+  --color-over-forecast: #b45309;      /* Deep Amber (Long) */
+  --color-under-forecast: #4338ca;     /* Deep Indigo (Short) */
+  
+  --color-danger: #cf222e;
+  --color-success: #1a7f37;
+  --chart-grid: #e1e4e8;
+  --skeleton-base: #e1e4e8;
+}
+
+/* Dark Theme Variables (Default) */
+:root, :root[data-theme='dark'] {
+  --bg-app: #0d1117;
+  --bg-surface: #161b22;
+  --bg-elevated: #21262d;
+  --bg-subtle: #1c2128;
+
+  --border-subtle: #30363d;
+  --border-strong: #484f58;
+
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+
+  /* Semantic Data Colors - Crisp Teal (#2dd4bf, contrast > 7:1 against #0d1117/#161b22) */
+  --color-forecast: #2dd4bf;
+  --color-actual: #f0f6fc;             /* Crisp Off-White Ground Truth */
+  --color-uncertainty-fill: rgba(45, 212, 191, 0.14);
+  --color-over-forecast: #fbbf24;      /* Amber (Long) */
+  --color-under-forecast: #818cf8;     /* Indigo Violet (Short) */
+
+  --color-danger: #f85149;
+  --color-success: #3fb950;
+  --chart-grid: #21262d;
+  --skeleton-base: #21262d;
+}

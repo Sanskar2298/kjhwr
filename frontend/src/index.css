@@ -1,60 +1,69 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
 
 @layer base {
-  :root {
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --color-bg-base: #07090e;
-    --color-bg-surface: #0e131f;
-    --color-bg-card: #131a2b;
-    --color-bg-elevated: #1a233a;
-    --color-border: #1e293b;
-    --color-border-subtle: #172033;
-    --color-accent-cyan: #06b6d4;
-    --color-accent-amber: #f59e0b;
-    --color-accent-emerald: #10b981;
-    --color-accent-rose: #f43f5e;
+  * {
+    border-color: var(--border-subtle);
   }
 
   body {
-    background-color: var(--color-bg-base);
-    color: #f1f5f9;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
     font-family: var(--font-sans);
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Monospace tabular figures for all data indicators */
+  .tabular-nums {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums lining-nums;
   }
 }
 
-/* Glassmorphism utility card */
-.glass-panel {
-  background: rgba(14, 19, 31, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+/* Utilitarian panels: 1px border, surface background, no glassmorphism or blur */
+.panel {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
 }
 
-.glass-panel-elevated {
-  background: rgba(19, 26, 43, 0.88);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.6);
+.panel-elevated {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
 }
 
-/* Custom scrollbars */
+/* Skeleton Loading State */
+.skeleton {
+  background-color: var(--skeleton-base);
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Compact scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #07090e;
+  background: var(--bg-app);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--border-subtle);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--border-strong);
 }

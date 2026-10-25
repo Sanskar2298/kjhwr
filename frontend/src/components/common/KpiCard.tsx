@@ -20,36 +20,36 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   formula,
   status = 'neutral',
 }) => {
-  const statusColorMap = {
-    neutral: 'border-slate-800 text-slate-100',
-    positive: 'border-emerald-500/30 text-emerald-400',
-    warning: 'border-amber-500/30 text-amber-400',
-    danger: 'border-rose-500/30 text-rose-400',
-  };
+  const statusBorderClass = {
+    neutral: 'border-[var(--border-subtle)]',
+    positive: 'border-[var(--color-forecast)]',
+    warning: 'border-[var(--color-over-forecast)]',
+    danger: 'border-[var(--color-danger)]',
+  }[status];
 
   return (
-    <div className={`glass-panel p-4 rounded-xl border flex flex-col justify-between ${statusColorMap[status]} transition-all hover:border-slate-700`}>
-      <div className="flex items-center justify-between mb-2">
+    <div className={`panel p-3.5 border ${statusBorderClass} flex flex-col justify-between transition-colors`}>
+      <div className="flex items-center justify-between mb-1">
         <MetricTooltip label={label} explanation={explanation} formula={formula}>
-          <span className="text-xs uppercase tracking-wider font-medium text-slate-400">
+          <span className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-muted)]">
             {label}
           </span>
         </MetricTooltip>
       </div>
 
-      <div className="flex items-baseline gap-1.5 my-1">
-        <span className="text-2xl font-bold tracking-tight font-mono text-white">
+      <div className="flex items-baseline gap-1 my-0.5">
+        <span className="text-[22px] font-semibold tracking-tight tabular-nums text-[var(--text-primary)]">
           {value}
         </span>
         {unit && (
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <span className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">
             {unit}
           </span>
         )}
       </div>
 
       {subtitle && (
-        <span className="text-[11px] text-slate-500 mt-1 line-clamp-1">
+        <span className="text-[11px] text-[var(--text-secondary)] mt-0.5 tabular-nums truncate">
           {subtitle}
         </span>
       )}
