@@ -4,8 +4,9 @@ Includes models for FUELHH actuals, WINDFOR forecasts, and aligned day-ahead rec
 Guarantees timezone-aware UTC datetime fields and strict typing.
 """
 
-from datetime import datetime, timezone
-from typing import Literal, Optional
+from datetime import UTC, datetime
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -25,8 +26,8 @@ class FuelHHRecord(BaseModel):
     def ensure_utc(cls, v: datetime) -> datetime:
         """Ensure all timestamps are timezone-aware and set to UTC."""
         if v.tzinfo is None:
-            return v.replace(tzinfo=timezone.utc)
-        return v.astimezone(timezone.utc)
+            return v.replace(tzinfo=UTC)
+        return v.astimezone(UTC)
 
 
 class WindforRecord(BaseModel):
@@ -42,8 +43,8 @@ class WindforRecord(BaseModel):
     def ensure_utc(cls, v: datetime) -> datetime:
         """Ensure all timestamps are timezone-aware and set to UTC."""
         if v.tzinfo is None:
-            return v.replace(tzinfo=timezone.utc)
-        return v.astimezone(timezone.utc)
+            return v.replace(tzinfo=UTC)
+        return v.astimezone(UTC)
 
 
 class IngestionQualityReport(BaseModel):

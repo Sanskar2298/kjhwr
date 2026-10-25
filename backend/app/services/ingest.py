@@ -6,11 +6,10 @@ Pydantic validation, raw JSON caching, and cleaned Parquet/CSV persistence.
 
 import json
 import logging
-import os
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 import httpx
 import pandas as pd
@@ -31,7 +30,7 @@ class BMRSIngestionService:
         base_url: str = ELEXON_BASE_URL,
         raw_dir: str = "data/raw",
         processed_dir: str = "data/processed",
-        client: Optional[httpx.Client] = None,
+        client: httpx.Client | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.raw_dir = Path(raw_dir)
@@ -45,17 +44,19 @@ class BMRSIngestionService:
         if self._client is not None:
             return self._client
         return httpx.Client(
-            headers={"User-Agent": "UK-Wind-Evaluator/0.1.0 (Day-Ahead Trading Support)"},
+            headers={
+                "User-Agent": "UK-Wind-Evaluator/0.1.0 (Day-Ahead Trading Support)"
+            },
             timeout=30.0,
         )
 
     def fetch_with_retry(
         self,
         url: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         max_retries: int = 4,
         backoff_factor: float = 1.5,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch JSON data from Elexon API with exponential backoff on transient errors.
 
         Args:
@@ -74,7 +75,9 @@ class BMRSIngestionService:
         attempt = 0
         while attempt < max_retries:
             try:
-                logger.info(f"Requesting {url} with params {params} (attempt {attempt + 1}/{max_retries})")
+                logger.info(
+                    f"Requesting {url} with params {params} (attempt {attempt + 1}/{max_retries})"
+                )
                 response = client.get(url, params=params)
                 if response.status_code == 200:
                     payload = response.json()
@@ -90,12 +93,14 @@ class BMRSIngestionService:
                     response.raise_for_status()
             except (httpx.RequestError, httpx.HTTPStatusError) as exc:
                 if attempt == max_retries - 1:
-                    logger.error(f"Failed to fetch {url} after {max_retries} attempts: {exc}")
+                    logger.error(
+                        f"Failed to fetch {url} after {max_retries} attempts: {exc}"
+                    )
                     raise
                 logger.warning(f"Network error: {exc}. Retrying...")
 
             attempt += 1
-            delay = backoff_factor ** attempt
+            delay = backoff_factor**attempt
             time.sleep(delay)
 
         raise RuntimeError(f"Exhausted retries fetching {url}")
@@ -105,7 +110,7 @@ class BMRSIngestionService:
         start_date: date,
         end_date: date,
         chunk_days: int = 14,
-    ) -> List[FuelHHRecord]:
+    ) -> list[FuelHHRecord]:
         """Fetch and validate FUELHH wind generation actuals in safe time chunks.
 
         The API restricts date spans to <= 31 days. Chunking into 14-day segments
@@ -119,7 +124,7 @@ class BMRSIngestionService:
         Returns:
             List[FuelHHRecord]: Cleaned and validated FUELHH models.
         """
-        records: List[FuelHHRecord] = []
+        records: list[FuelHHRecord] = []
         curr_start = start_date
 
         while curr_start <= end_date:
@@ -146,11 +151,13 @@ class BMRSIngestionService:
             curr_start = curr_end + timedelta(days=1)
 
         # Deduplicate records by (settlementDate, settlementPeriod, startTime)
-        deduped: Dict[Tuple[str, int, datetime], FuelHHRecord] = {}
+        deduped: dict[tuple[str, int, datetime], FuelHHRecord] = {}
         for r in records:
             deduped[(r.settlementDate, r.settlementPeriod, r.startTime)] = r
 
-        logger.info(f"Ingested {len(deduped)} unique FUELHH records from {start_date} to {end_date}")
+        logger.info(
+            f"Ingested {len(deduped)} unique FUELHH records from {start_date} to {end_date}"
+        )
         return list(deduped.values())
 
     def fetch_windfor_chunked(
@@ -158,7 +165,7 @@ class BMRSIngestionService:
         publish_from: datetime,
         publish_to: datetime,
         chunk_days: int = 10,
-    ) -> List[WindforRecord]:
+    ) -> list[WindforRecord]:
         """Fetch and validate WINDFOR forecasts chunked by publication timestamp.
 
         Args:
@@ -169,7 +176,7 @@ class BMRSIngestionService:
         Returns:
             List[WindforRecord]: Cleaned and validated WINDFOR models.
         """
-        records: List[WindforRecord] = []
+        records: list[WindforRecord] = []
         curr_start = publish_from
 
         while curr_start <= publish_to:
@@ -198,7 +205,7 @@ class BMRSIngestionService:
             curr_start = curr_end + timedelta(seconds=1)
 
         # Deduplicate by (publishTime, startTime)
-        deduped: Dict[Tuple[datetime, datetime], WindforRecord] = {}
+        deduped: dict[tuple[datetime, datetime], WindforRecord] = {}
         for r in records:
             deduped[(r.publishTime, r.startTime)] = r
 
@@ -229,8 +236,8 @@ class BMRSIngestionService:
         fuelhh_start = decision_start_date
         fuelhh_end = decision_end_date + timedelta(days=1)  # Cover up to Feb 1 outturns
 
-        windfor_start = datetime(2025, 12, 30, 0, 0, tzinfo=timezone.utc)
-        windfor_end = datetime(2026, 1, 31, 23, 59, 59, tzinfo=timezone.utc)
+        windfor_start = datetime(2025, 12, 30, 0, 0, tzinfo=UTC)
+        windfor_end = datetime(2026, 1, 31, 23, 59, 59, tzinfo=UTC)
 
         logger.info("Executing FUELHH ingestion...")
         fuelhh_records = self.fetch_fuelhh_chunked(fuelhh_start, fuelhh_end)
@@ -265,7 +272,9 @@ class BMRSIngestionService:
         missing_periods = max(0, expected_total_hh - len(fuelhh_df))
 
         # Lead time / horizon distribution
-        lead_hours = (windfor_df["startTime"] - windfor_df["publishTime"]).dt.total_seconds() / 3600.0
+        lead_hours = (
+            windfor_df["startTime"] - windfor_df["publishTime"]
+        ).dt.total_seconds() / 3600.0
         lead_dist = {
             "retrospective_lt_0h": int((lead_hours < 0).sum()),
             "intraday_0h_to_24h": int(((lead_hours >= 0) & (lead_hours < 24)).sum()),

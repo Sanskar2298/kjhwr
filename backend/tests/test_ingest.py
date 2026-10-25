@@ -3,10 +3,11 @@
 Tests run offline without making live network calls to Elexon BMRS.
 """
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
-import pytest
+
 import httpx
+import pytest
 from pydantic import ValidationError
 
 from app.models.ingestion import FuelHHRecord, WindforRecord
@@ -73,8 +74,8 @@ def test_fuelhh_validation_success():
     assert record.dataset == "FUELHH"
     assert record.generation == 12450.5
     assert record.settlementPeriod == 1
-    assert record.publishTime.tzinfo == timezone.utc
-    assert record.startTime.tzinfo == timezone.utc
+    assert record.publishTime.tzinfo == UTC
+    assert record.startTime.tzinfo == UTC
 
 
 def test_fuelhh_validation_rejects_negative_generation():
@@ -90,7 +91,7 @@ def test_windfor_validation_success():
     record = WindforRecord(**RECORDED_WINDFOR_FIXTURE[0])
     assert record.dataset == "WINDFOR"
     assert record.generation == 12100.0
-    assert record.publishTime.tzinfo == timezone.utc
+    assert record.publishTime.tzinfo == UTC
 
 
 def test_bmrs_service_mocked_ingestion(tmp_path: Path):
@@ -126,8 +127,8 @@ def test_bmrs_service_mocked_ingestion(tmp_path: Path):
 
     # Run WINDFOR chunked test
     wind_records = service.fetch_windfor_chunked(
-        publish_from=datetime(2025, 12, 31, 0, 0, tzinfo=timezone.utc),
-        publish_to=datetime(2025, 12, 31, 23, 59, tzinfo=timezone.utc),
+        publish_from=datetime(2025, 12, 31, 0, 0, tzinfo=UTC),
+        publish_to=datetime(2025, 12, 31, 23, 59, tzinfo=UTC),
     )
     # Ensure deduplication worked (3 items -> 2 unique)
     assert len(wind_records) == 2

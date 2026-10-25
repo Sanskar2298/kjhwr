@@ -8,8 +8,9 @@ Covers:
 5. Empirical error uncertainty bands (P10, P50, P90) computed without lookahead leakage.
 """
 
-from datetime import date, datetime, time, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import pytz
@@ -36,10 +37,12 @@ def convert_local_cutoff_to_utc(
     """
     decision_date = target_date + timedelta(days=cutoff_day_offset)
     hh, mm = map(int, cutoff_time_local.split(":"))
-    naive_dt = datetime(decision_date.year, decision_date.month, decision_date.day, hh, mm, 0)
+    naive_dt = datetime(
+        decision_date.year, decision_date.month, decision_date.day, hh, mm, 0
+    )
     # Localize with is_dst=None to raise if ambiguous, or handle standard transitions cleanly
     local_dt = LONDON_TZ.localize(naive_dt, is_dst=None)
-    return local_dt.astimezone(timezone.utc)
+    return local_dt.astimezone(UTC)
 
 
 def get_decision_forecast(
@@ -68,17 +71,30 @@ def get_decision_forecast(
         pd.DataFrame: 48 rows (or 46/50 on DST change days) with columns:
             ['target_start', 'settlementPeriod', 'forecast_mw', 'publishTime', 'horizon_hours']
     """
-    cutoff_utc = convert_local_cutoff_to_utc(delivery_date, cutoff_time_local, cutoff_day_offset)
+    cutoff_utc = convert_local_cutoff_to_utc(
+        delivery_date, cutoff_time_local, cutoff_day_offset
+    )
 
     # Standard delivery day 48 half-hours in UTC
-    start_utc = datetime(delivery_date.year, delivery_date.month, delivery_date.day, 0, 0, tzinfo=timezone.utc)
+    start_utc = datetime(
+        delivery_date.year,
+        delivery_date.month,
+        delivery_date.day,
+        0,
+        0,
+        tzinfo=UTC,
+    )
     end_utc = start_utc + timedelta(days=1)
-    target_half_hours = pd.date_range(start=start_utc, end=end_utc - timedelta(minutes=30), freq="30min")
+    target_half_hours = pd.date_range(
+        start=start_utc, end=end_utc - timedelta(minutes=30), freq="30min"
+    )
 
-    grid_df = pd.DataFrame({
-        "target_start": target_half_hours,
-        "settlementPeriod": list(range(1, len(target_half_hours) + 1)),
-    })
+    grid_df = pd.DataFrame(
+        {
+            "target_start": target_half_hours,
+            "settlementPeriod": list(range(1, len(target_half_hours) + 1)),
+        }
+    )
 
     if windfor_df.empty:
         grid_df["forecast_mw"] = np.nan
@@ -111,16 +127,26 @@ def get_decision_forecast(
     )
 
     merged["forecast_mw"] = merged["generation"]
-    merged["horizon_hours"] = (merged["target_start"] - merged["publishTime"]).dt.total_seconds() / 3600.0
+    merged["horizon_hours"] = (
+        merged["target_start"] - merged["publishTime"]
+    ).dt.total_seconds() / 3600.0
 
-    result = merged[["target_start", "settlementPeriod", "forecast_mw", "publishTime", "horizon_hours"]].copy()
+    result = merged[
+        [
+            "target_start",
+            "settlementPeriod",
+            "forecast_mw",
+            "publishTime",
+            "horizon_hours",
+        ]
+    ].copy()
     return result
 
 
 def get_forecast_evolution(
     windfor_df: pd.DataFrame,
     target_start: datetime,
-    end_time: Optional[datetime] = None,
+    end_time: datetime | None = None,
 ) -> pd.DataFrame:
     """Return all successive forecasts published for a target delivery start time.
 
@@ -135,7 +161,7 @@ def get_forecast_evolution(
         pd.DataFrame: Forecasts ordered by publishTime ascending with horizon_hours.
     """
     if target_start.tzinfo is None:
-        target_start = target_start.replace(tzinfo=timezone.utc)
+        target_start = target_start.replace(tzinfo=UTC)
 
     # Hourly floor match if target is half-hourly
     hour_target = target_start.replace(minute=0, second=0, microsecond=0)
@@ -143,18 +169,20 @@ def get_forecast_evolution(
     sub = windfor_df[windfor_df["startTime"] == hour_target].copy()
     if end_time is not None:
         if end_time.tzinfo is None:
-            end_time = end_time.replace(tzinfo=timezone.utc)
+            end_time = end_time.replace(tzinfo=UTC)
         sub = sub[sub["publishTime"] <= end_time]
 
     sub = sub.sort_values("publishTime").reset_index(drop=True)
-    sub["horizon_hours"] = (target_start - sub["publishTime"]).dt.total_seconds() / 3600.0
+    sub["horizon_hours"] = (
+        target_start - sub["publishTime"]
+    ).dt.total_seconds() / 3600.0
     return sub[["publishTime", "startTime", "generation", "horizon_hours"]]
 
 
 def compute_metrics(
-    actual: Union[pd.Series, np.ndarray, List[float]],
-    forecast: Union[pd.Series, np.ndarray, List[float]],
-) -> Dict[str, Any]:
+    actual: pd.Series | np.ndarray | list[float],
+    forecast: pd.Series | np.ndarray | list[float],
+) -> dict[str, Any]:
     """Compute quantitative error and accuracy metrics between actuals and forecasts.
 
     Zero-handling rule for MAPE:
@@ -211,7 +239,7 @@ def compute_metrics(
     abs_errors = np.abs(errors)
 
     mae = float(np.mean(abs_errors))
-    rmse = float(np.sqrt(np.mean(errors ** 2)))
+    rmse = float(np.sqrt(np.mean(errors**2)))
     mean_bias = float(np.mean(errors))
     median_ae = float(np.median(abs_errors))
     p90_ae = float(np.percentile(abs_errors, 90))
@@ -248,7 +276,7 @@ def compute_metrics(
     }
 
 
-def compute_error_breakdowns(aligned_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+def compute_error_breakdowns(aligned_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     """Calculate multi-dimensional error breakdowns.
 
     Breakdowns:
@@ -277,59 +305,95 @@ def compute_error_breakdowns(aligned_df: pd.DataFrame) -> Dict[str, pd.DataFrame
     # 1. Horizon buckets
     bins = [0, 16, 20, 24, 28, 32, 40, 100]
     labels = ["<16h", "16-20h", "20-24h", "24-28h", "28-32h", "32-40h", ">40h"]
-    df["horizon_bucket"] = pd.cut(df["horizon_hours"], bins=bins, labels=labels, right=False)
+    df["horizon_bucket"] = pd.cut(
+        df["horizon_hours"], bins=bins, labels=labels, right=False
+    )
 
-    by_horizon = df.groupby("horizon_bucket", observed=False).apply(
-        lambda g: pd.Series({
-            "count": len(g),
-            "mae": g["abs_error_mw"].mean(),
-            "rmse": np.sqrt((g["error_mw"] ** 2).mean()) if len(g) > 0 else np.nan,
-            "mean_bias": g["error_mw"].mean(),
-        }),
-        include_groups=False,
-    ).reset_index()
+    by_horizon = (
+        df.groupby("horizon_bucket", observed=False)
+        .apply(
+            lambda g: pd.Series(
+                {
+                    "count": len(g),
+                    "mae": g["abs_error_mw"].mean(),
+                    "rmse": (
+                        np.sqrt((g["error_mw"] ** 2).mean()) if len(g) > 0 else np.nan
+                    ),
+                    "mean_bias": g["error_mw"].mean(),
+                }
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+    )
 
     # 2. By hour of day
-    by_hour = df.groupby("hour").apply(
-        lambda g: pd.Series({
-            "count": len(g),
-            "mae": g["abs_error_mw"].mean(),
-            "rmse": np.sqrt((g["error_mw"] ** 2).mean()),
-            "mean_bias": g["error_mw"].mean(),
-            "mean_actual": g["actual_mw"].mean(),
-            "mean_forecast": g["forecast_mw"].mean(),
-        }),
-        include_groups=False,
-    ).reset_index()
+    by_hour = (
+        df.groupby("hour")
+        .apply(
+            lambda g: pd.Series(
+                {
+                    "count": len(g),
+                    "mae": g["abs_error_mw"].mean(),
+                    "rmse": np.sqrt((g["error_mw"] ** 2).mean()),
+                    "mean_bias": g["error_mw"].mean(),
+                    "mean_actual": g["actual_mw"].mean(),
+                    "mean_forecast": g["forecast_mw"].mean(),
+                }
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+    )
 
     # 3. By wind level bucket (Low, Medium, High)
     wind_bins = [0, 5000, 12000, 50000]
     wind_labels = ["Low (<5GW)", "Medium (5-12GW)", "High (>12GW)"]
-    df["wind_level"] = pd.cut(df["actual_mw"], bins=wind_bins, labels=wind_labels, right=False)
+    df["wind_level"] = pd.cut(
+        df["actual_mw"], bins=wind_bins, labels=wind_labels, right=False
+    )
 
-    by_wind_level = df.groupby("wind_level", observed=False).apply(
-        lambda g: pd.Series({
-            "count": len(g),
-            "mae": g["abs_error_mw"].mean(),
-            "rmse": np.sqrt((g["error_mw"] ** 2).mean()) if len(g) > 0 else np.nan,
-            "mean_bias": g["error_mw"].mean(),
-            "nmae_pct": (g["abs_error_mw"].mean() / g["actual_mw"].mean() * 100.0) if len(g) > 0 and g["actual_mw"].mean() > 0 else np.nan,
-        }),
-        include_groups=False,
-    ).reset_index()
+    by_wind_level = (
+        df.groupby("wind_level", observed=False)
+        .apply(
+            lambda g: pd.Series(
+                {
+                    "count": len(g),
+                    "mae": g["abs_error_mw"].mean(),
+                    "rmse": (
+                        np.sqrt((g["error_mw"] ** 2).mean()) if len(g) > 0 else np.nan
+                    ),
+                    "mean_bias": g["error_mw"].mean(),
+                    "nmae_pct": (
+                        (g["abs_error_mw"].mean() / g["actual_mw"].mean() * 100.0)
+                        if len(g) > 0 and g["actual_mw"].mean() > 0
+                        else np.nan
+                    ),
+                }
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+    )
 
     # 4. By day
-    by_day = df.groupby("date").apply(
-        lambda g: pd.Series({
-            "count": len(g),
-            "mae": g["abs_error_mw"].mean(),
-            "rmse": np.sqrt((g["error_mw"] ** 2).mean()),
-            "mean_bias": g["error_mw"].mean(),
-            "mean_actual": g["actual_mw"].mean(),
-            "mean_forecast": g["forecast_mw"].mean(),
-        }),
-        include_groups=False,
-    ).reset_index()
+    by_day = (
+        df.groupby("date")
+        .apply(
+            lambda g: pd.Series(
+                {
+                    "count": len(g),
+                    "mae": g["abs_error_mw"].mean(),
+                    "rmse": np.sqrt((g["error_mw"] ** 2).mean()),
+                    "mean_bias": g["error_mw"].mean(),
+                    "mean_actual": g["actual_mw"].mean(),
+                    "mean_forecast": g["forecast_mw"].mean(),
+                }
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+    )
 
     return {
         "by_horizon": by_horizon,
@@ -341,8 +405,8 @@ def compute_error_breakdowns(aligned_df: pd.DataFrame) -> Dict[str, pd.DataFrame
 
 def error_bands(
     all_aligned_df: pd.DataFrame,
-    eval_date: Optional[date] = None,
-    horizon_bins: Optional[List[float]] = None,
+    eval_date: date | None = None,
+    horizon_bins: list[float] | None = None,
 ) -> pd.DataFrame:
     """Compute empirical error quantiles (P10, P50, P90) of (actual - forecast) vs horizon.
 
@@ -380,12 +444,17 @@ def error_bands(
     else:
         calibration_data = df.copy()
 
-    calibration_data["delta"] = calibration_data["actual_mw"] - calibration_data["forecast_mw"]
+    calibration_data["delta"] = (
+        calibration_data["actual_mw"] - calibration_data["forecast_mw"]
+    )
 
     if horizon_bins is None:
         horizon_bins = [0, 16, 20, 24, 28, 32, 40, 100]
 
-    labels = [f"{int(horizon_bins[i])}-{int(horizon_bins[i+1])}h" for i in range(len(horizon_bins) - 1)]
+    labels = [
+        f"{int(horizon_bins[i])}-{int(horizon_bins[i+1])}h"
+        for i in range(len(horizon_bins) - 1)
+    ]
     calibration_data["horizon_bucket"] = pd.cut(
         calibration_data["horizon_hours"],
         bins=horizon_bins,
@@ -393,14 +462,26 @@ def error_bands(
         right=False,
     )
 
-    bands = calibration_data.groupby("horizon_bucket", observed=False).apply(
-        lambda g: pd.Series({
-            "count": len(g),
-            "p10_delta": float(np.percentile(g["delta"], 10)) if len(g) >= 5 else np.nan,
-            "p50_delta": float(np.percentile(g["delta"], 50)) if len(g) >= 5 else np.nan,
-            "p90_delta": float(np.percentile(g["delta"], 90)) if len(g) >= 5 else np.nan,
-        }),
-        include_groups=False,
-    ).reset_index()
+    bands = (
+        calibration_data.groupby("horizon_bucket", observed=False)
+        .apply(
+            lambda g: pd.Series(
+                {
+                    "count": len(g),
+                    "p10_delta": (
+                        float(np.percentile(g["delta"], 10)) if len(g) >= 5 else np.nan
+                    ),
+                    "p50_delta": (
+                        float(np.percentile(g["delta"], 50)) if len(g) >= 5 else np.nan
+                    ),
+                    "p90_delta": (
+                        float(np.percentile(g["delta"], 90)) if len(g) >= 5 else np.nan
+                    ),
+                }
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+    )
 
     return bands

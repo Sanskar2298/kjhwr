@@ -5,7 +5,7 @@ It guarantees strict typing and fallback defaults for development.
 """
 
 from functools import lru_cache
-from typing import List
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     API_HOST: str = "0.0.0.0"
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     # Elexon BMRS endpoint configuration
     ELEXON_API_BASE_URL: str = "https://data.elexon.co.uk/bmrs/api/v1"
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     )
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Return a cached singleton instance of application settings.
 

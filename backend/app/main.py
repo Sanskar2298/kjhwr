@@ -4,10 +4,11 @@ Configures structured logging, CORS middleware, lifespan events for data loading
 and registers REST API routers.
 """
 
-from contextlib import asynccontextmanager
 import logging
 import sys
 import time
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -28,7 +29,7 @@ settings = get_settings()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Lifespan event to load datasets into memory once on server startup."""
     logger.info("Initializing DataManager and pre-loading processed datasets...")
     dm = DataManager.get_instance()
@@ -74,7 +75,9 @@ async def log_requests(request: Request, call_next):
         )
         return JSONResponse(
             status_code=500,
-            content={"detail": "Internal server error occurred while processing request."},
+            content={
+                "detail": "Internal server error occurred while processing request."
+            },
         )
 
 

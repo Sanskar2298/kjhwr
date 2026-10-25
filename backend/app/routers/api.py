@@ -1,8 +1,9 @@
 """API routers for forecast decisions, evolution, actuals, and accuracy evaluation."""
 
-from datetime import date, datetime
 import logging
-from typing import Any, List, Optional
+from datetime import date, datetime
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.models.api import (
@@ -27,7 +28,9 @@ logger = logging.getLogger("api_routers")
 router = APIRouter(prefix="/api", tags=["Day-Ahead Trading Support"])
 
 
-@router.get("/meta", response_model=MetaResponse, summary="Get system metadata and data range")
+@router.get(
+    "/meta", response_model=MetaResponse, summary="Get system metadata and data range"
+)
 async def get_metadata(dm: DataManager = Depends(get_data_manager)) -> MetaResponse:
     """Return available delivery date bounds, defaults, and timezone."""
     meta = dm.get_meta()
@@ -41,7 +44,11 @@ async def get_metadata(dm: DataManager = Depends(get_data_manager)) -> MetaRespo
 )
 async def get_decision_forecast_endpoint(
     delivery_date: date = Query(..., description="Target delivery date (YYYY-MM-DD)"),
-    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Decision cutoff time in Europe/London (HH:MM)"),
+    cutoff_hour: str = Query(
+        "09:00",
+        pattern=r"^\d{2}:\d{2}$",
+        description="Decision cutoff time in Europe/London (HH:MM)",
+    ),
     dm: DataManager = Depends(get_data_manager),
 ) -> DecisionForecastResponse:
     """Return the latest forecast available at decision time on D-1 along with P10/P50/P90 error bands."""
@@ -52,12 +59,24 @@ async def get_decision_forecast_endpoint(
             DecisionForecastPoint(
                 target_start=row["target_start"],
                 settlement_period=int(row["settlementPeriod"]),
-                forecast_mw=row["forecast_mw"] if not pd_isna(row["forecast_mw"]) else None,
-                publish_time=row["publishTime"] if not pd_isna(row["publishTime"]) else None,
-                horizon_hours=row["horizon_hours"] if not pd_isna(row["horizon_hours"]) else None,
-                band_p10_mw=row["band_p10_mw"] if not pd_isna(row["band_p10_mw"]) else None,
-                band_p50_mw=row["band_p50_mw"] if not pd_isna(row["band_p50_mw"]) else None,
-                band_p90_mw=row["band_p90_mw"] if not pd_isna(row["band_p90_mw"]) else None,
+                forecast_mw=(
+                    row["forecast_mw"] if not pd_isna(row["forecast_mw"]) else None
+                ),
+                publish_time=(
+                    row["publishTime"] if not pd_isna(row["publishTime"]) else None
+                ),
+                horizon_hours=(
+                    row["horizon_hours"] if not pd_isna(row["horizon_hours"]) else None
+                ),
+                band_p10_mw=(
+                    row["band_p10_mw"] if not pd_isna(row["band_p10_mw"]) else None
+                ),
+                band_p50_mw=(
+                    row["band_p50_mw"] if not pd_isna(row["band_p50_mw"]) else None
+                ),
+                band_p90_mw=(
+                    row["band_p90_mw"] if not pd_isna(row["band_p90_mw"]) else None
+                ),
             )
         )
 
@@ -75,7 +94,9 @@ async def get_decision_forecast_endpoint(
     summary="Get historical forecast revisions for a specific target hour",
 )
 async def get_forecast_evolution_endpoint(
-    target: datetime = Query(..., description="Target delivery start time in UTC (ISO-8601)"),
+    target: datetime = Query(
+        ..., description="Target delivery start time in UTC (ISO-8601)"
+    ),
     dm: DataManager = Depends(get_data_manager),
 ) -> ForecastEvolutionResponse:
     """Trace all sequential forecasts published for a target delivery period."""
@@ -93,7 +114,9 @@ async def get_forecast_evolution_endpoint(
     return ForecastEvolutionResponse(target_start=target, revisions=revisions)
 
 
-@router.get("/actuals", response_model=ActualsResponse, summary="Get outturn generation actuals")
+@router.get(
+    "/actuals", response_model=ActualsResponse, summary="Get outturn generation actuals"
+)
 async def get_actuals_endpoint(
     start: date = Query(..., description="Start settlement date (YYYY-MM-DD)"),
     end: date = Query(..., description="End settlement date (YYYY-MM-DD)"),
@@ -101,7 +124,9 @@ async def get_actuals_endpoint(
 ) -> ActualsResponse:
     """Retrieve half-hourly outturn generation records from FUELHH (fuelType=WIND)."""
     if start > end:
-        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
+        raise HTTPException(
+            status_code=400, detail="start date must be before or equal to end date"
+        )
 
     df = dm.get_actuals(start, end)
     actuals = []
@@ -118,7 +143,11 @@ async def get_actuals_endpoint(
     return ActualsResponse(count=len(actuals), actuals=actuals)
 
 
-@router.get("/accuracy/summary", response_model=AccuracyMetricsSummary, summary="Get quantitative accuracy KPIs")
+@router.get(
+    "/accuracy/summary",
+    response_model=AccuracyMetricsSummary,
+    summary="Get quantitative accuracy KPIs",
+)
 async def get_accuracy_summary(
     start: date = Query(date(2026, 1, 1), description="Start delivery date"),
     end: date = Query(date(2026, 1, 31), description="End delivery date"),
@@ -127,7 +156,9 @@ async def get_accuracy_summary(
 ) -> AccuracyMetricsSummary:
     """Compute overall MAE, RMSE, Mean Bias, NMAE, MAPE, P90, and R2."""
     if start > end:
-        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
+        raise HTTPException(
+            status_code=400, detail="start date must be before or equal to end date"
+        )
 
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     metrics = compute_metrics(aligned_df["actual_mw"], aligned_df["forecast_mw"])
@@ -150,16 +181,24 @@ async def get_accuracy_summary(
     )
 
 
-@router.get("/accuracy/by-horizon", response_model=List[HorizonBucketBreakdown], summary="Error breakdown by horizon")
+@router.get(
+    "/accuracy/by-horizon",
+    response_model=list[HorizonBucketBreakdown],
+    summary="Error breakdown by horizon",
+)
 async def get_accuracy_by_horizon(
     start: date = Query(date(2026, 1, 1), description="Start delivery date"),
     end: date = Query(date(2026, 1, 31), description="End delivery date"),
-    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"),
+    cutoff_hour: str = Query(
+        "09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"
+    ),
     dm: DataManager = Depends(get_data_manager),
-) -> List[HorizonBucketBreakdown]:
+) -> list[HorizonBucketBreakdown]:
     """Breakdown of forecast errors by lead horizon bucket."""
     if start > end:
-        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
+        raise HTTPException(
+            status_code=400, detail="start date must be before or equal to end date"
+        )
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     breakdowns = compute_error_breakdowns(aligned_df)
     res = []
@@ -178,16 +217,24 @@ async def get_accuracy_by_horizon(
     return res
 
 
-@router.get("/accuracy/by-hour", response_model=List[HourOfDayBreakdown], summary="Error breakdown by hour of day")
+@router.get(
+    "/accuracy/by-hour",
+    response_model=list[HourOfDayBreakdown],
+    summary="Error breakdown by hour of day",
+)
 async def get_accuracy_by_hour(
     start: date = Query(date(2026, 1, 1), description="Start delivery date"),
     end: date = Query(date(2026, 1, 31), description="End delivery date"),
-    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"),
+    cutoff_hour: str = Query(
+        "09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"
+    ),
     dm: DataManager = Depends(get_data_manager),
-) -> List[HourOfDayBreakdown]:
+) -> list[HourOfDayBreakdown]:
     """Breakdown of forecast errors by clock hour of delivery (0-23 UTC)."""
     if start > end:
-        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
+        raise HTTPException(
+            status_code=400, detail="start date must be before or equal to end date"
+        )
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     breakdowns = compute_error_breakdowns(aligned_df)
     res = []
@@ -206,16 +253,24 @@ async def get_accuracy_by_hour(
     return res
 
 
-@router.get("/accuracy/by-wind-level", response_model=List[WindLevelBreakdown], summary="Error breakdown by wind regime")
+@router.get(
+    "/accuracy/by-wind-level",
+    response_model=list[WindLevelBreakdown],
+    summary="Error breakdown by wind regime",
+)
 async def get_accuracy_by_wind_level(
     start: date = Query(date(2026, 1, 1), description="Start delivery date"),
     end: date = Query(date(2026, 1, 31), description="End delivery date"),
-    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"),
+    cutoff_hour: str = Query(
+        "09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"
+    ),
     dm: DataManager = Depends(get_data_manager),
-) -> List[WindLevelBreakdown]:
+) -> list[WindLevelBreakdown]:
     """Breakdown of forecast errors by actual wind generation level."""
     if start > end:
-        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
+        raise HTTPException(
+            status_code=400, detail="start date must be before or equal to end date"
+        )
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     breakdowns = compute_error_breakdowns(aligned_df)
     res = []
@@ -235,16 +290,24 @@ async def get_accuracy_by_wind_level(
     return res
 
 
-@router.get("/accuracy/daily", response_model=List[DailyBreakdown], summary="Daily accuracy metrics")
+@router.get(
+    "/accuracy/daily",
+    response_model=list[DailyBreakdown],
+    summary="Daily accuracy metrics",
+)
 async def get_accuracy_daily(
     start: date = Query(date(2026, 1, 1), description="Start delivery date"),
     end: date = Query(date(2026, 1, 31), description="End delivery date"),
-    cutoff_hour: str = Query("09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"),
+    cutoff_hour: str = Query(
+        "09:00", pattern=r"^\d{2}:\d{2}$", description="Cutoff time in London"
+    ),
     dm: DataManager = Depends(get_data_manager),
-) -> List[DailyBreakdown]:
+) -> list[DailyBreakdown]:
     """Daily time series of accuracy metrics for trend visualization."""
     if start > end:
-        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
+        raise HTTPException(
+            status_code=400, detail="start date must be before or equal to end date"
+        )
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     breakdowns = compute_error_breakdowns(aligned_df)
     res = []
@@ -263,16 +326,22 @@ async def get_accuracy_daily(
     return res
 
 
-@router.get("/accuracy/timeseries", response_model=List[TimeseriesComparisonPoint], summary="Actual vs forecast time series")
+@router.get(
+    "/accuracy/timeseries",
+    response_model=list[TimeseriesComparisonPoint],
+    summary="Actual vs forecast time series",
+)
 async def get_accuracy_timeseries(
     start: date = Query(date(2026, 1, 1)),
     end: date = Query(date(2026, 1, 7)),
     cutoff_hour: str = Query("09:00"),
     dm: DataManager = Depends(get_data_manager),
-) -> List[TimeseriesComparisonPoint]:
+) -> list[TimeseriesComparisonPoint]:
     """Paired time series of actuals and decision forecasts."""
     if start > end:
-        raise HTTPException(status_code=400, detail="start date must be before or equal to end date")
+        raise HTTPException(
+            status_code=400, detail="start date must be before or equal to end date"
+        )
 
     aligned_df = dm.get_aligned_timeseries(start, end, cutoff_hour)
     res = []
@@ -281,11 +350,27 @@ async def get_accuracy_timeseries(
             TimeseriesComparisonPoint(
                 target_start=row["target_start"],
                 settlement_period=int(row["settlementPeriod"]),
-                actual_mw=float(row["actual_mw"]) if not pd_isna(row["actual_mw"]) else None,
-                forecast_mw=float(row["forecast_mw"]) if not pd_isna(row["forecast_mw"]) else None,
-                error_mw=float(row["error_mw"]) if not pd_isna(row["error_mw"]) else None,
-                abs_error_mw=float(row["abs_error_mw"]) if not pd_isna(row["abs_error_mw"]) else None,
-                horizon_hours=float(row["horizon_hours"]) if not pd_isna(row["horizon_hours"]) else None,
+                actual_mw=(
+                    float(row["actual_mw"]) if not pd_isna(row["actual_mw"]) else None
+                ),
+                forecast_mw=(
+                    float(row["forecast_mw"])
+                    if not pd_isna(row["forecast_mw"])
+                    else None
+                ),
+                error_mw=(
+                    float(row["error_mw"]) if not pd_isna(row["error_mw"]) else None
+                ),
+                abs_error_mw=(
+                    float(row["abs_error_mw"])
+                    if not pd_isna(row["abs_error_mw"])
+                    else None
+                ),
+                horizon_hours=(
+                    float(row["horizon_hours"])
+                    if not pd_isna(row["horizon_hours"])
+                    else None
+                ),
             )
         )
     return res
@@ -294,4 +379,5 @@ async def get_accuracy_timeseries(
 def pd_isna(val: Any) -> bool:
     """Helper to detect pandas NaT or NaN."""
     import pandas as pd
+
     return bool(pd.isna(val))
