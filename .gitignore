@@ -49,6 +49,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Temporary investigation files
+swagger_spec.json
+
 # Project data caches (keep directory structure via .gitkeep)
 /data/raw/*
 !/data/raw/.gitkeep
