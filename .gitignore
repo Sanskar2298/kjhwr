@@ -52,8 +52,10 @@ Thumbs.db
 # Temporary investigation files
 swagger_spec.json
 
-# Project data caches (keep directory structure via .gitkeep)
+# Project data caches
 /data/raw/*
 !/data/raw/.gitkeep
-/data/processed/*
+/data/processed/*.csv
+!/data/processed/*.parquet
 !/data/processed/.gitkeep
+

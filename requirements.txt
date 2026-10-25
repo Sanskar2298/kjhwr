@@ -1,0 +1,11 @@
+# Vercel Python Runtime Requirements
+fastapi==0.115.11
+pydantic==2.10.6
+pydantic-settings==2.8.1
+httpx==0.28.1
+pandas==2.2.3
+numpy==2.2.3
+pyarrow>=14.0.0
+fastparquet>=2024.5.0
+python-dateutil==2.9.0.post0
+pytz==2025.1
