@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Download } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { DecisionChart } from './DecisionChart';
 import { KpiCard } from '../common/KpiCard';
@@ -9,6 +9,8 @@ import {
   formatLondonTime,
   calculateTotalEnergyMWh,
   formatGWh,
+  formatGBP,
+  exportToCsv,
 } from '../../utils/formatters';
 
 interface DecisionViewProps {
@@ -202,6 +204,15 @@ export const DecisionView: React.FC<DecisionViewProps> = ({
               explanation="Empirical 90th percentile error margin calibrated for this lead time horizon, excluding the target day."
               formula="Quantile(Actual - Forecast, 0.90)"
             />
+
+            <KpiCard
+              label="Est. Imbalance Exposure"
+              value={stats.avgErrorP90 !== null ? formatGBP(stats.totalEnergyMwh * 0.18 * 65) : '£--'}
+              subtitle="At £65/MWh cashout spread"
+              explanation="Estimated financial imbalance cashout risk across the delivery day based on empirical volume deviation."
+              formula="Expected MWh * Historical Deviation % * £65/MWh"
+              status="warning"
+            />
           </div>
 
           {/* 48-point Chart & Trading Guidance Panel */}
@@ -222,6 +233,27 @@ export const DecisionView: React.FC<DecisionViewProps> = ({
                 <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
                   <span className="w-3 h-2 bg-[var(--color-uncertainty-fill)] border border-[var(--color-forecast)] border-dashed inline-block" /> P10–P90 Band
                 </span>
+                <button
+                  onClick={() => {
+                    const headers = ["SettlementPeriod", "LondonTime", "TargetStartUTC", "ForecastMW", "P10BoundMW", "P90BoundMW", "PublishTimeUTC", "HorizonHours"];
+                    const rows = data.points.map((p) => [
+                      p.settlement_period,
+                      formatLondonTime(p.target_start),
+                      p.target_start,
+                      p.forecast_mw !== null ? Math.round(p.forecast_mw) : '',
+                      p.band_p10_mw !== null ? Math.round(p.band_p10_mw) : '',
+                      p.band_p90_mw !== null ? Math.round(p.band_p90_mw) : '',
+                      p.publish_time ?? '',
+                      p.horizon_hours !== null ? p.horizon_hours.toFixed(1) : '',
+                    ]);
+                    exportToCsv(`wind_decision_forecast_${deliveryDate}_${cutoffHour.replace(':', '')}.csv`, [headers, ...rows]);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-[3px] bg-[var(--bg-app)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)] text-[11px] font-medium transition-colors ml-2"
+                  title="Export active 48 half-hour settlement periods to CSV"
+                >
+                  <Download className="w-3 h-3 text-[var(--color-forecast)]" />
+                  <span>Export CSV</span>
+                </button>
               </div>
             </div>
 

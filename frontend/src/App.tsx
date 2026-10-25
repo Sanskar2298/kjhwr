@@ -39,6 +39,30 @@ export function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  // Keyboard navigation shortcuts: 1 (Decision), 2 (Accuracy), 3 (Evolution), T (Theme), ? (Assumptions)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in an input or select
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+
+      if (e.key === '1') {
+        setActiveTab('decision');
+      } else if (e.key === '2') {
+        setActiveTab('accuracy');
+      } else if (e.key === '3') {
+        setActiveTab('evolution');
+      } else if (e.key === 't' || e.key === 'T') {
+        toggleTheme();
+      } else if (e.key === '?') {
+        setIsAssumptionsOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] flex flex-col font-sans">
@@ -77,35 +101,38 @@ export function App() {
                 }`}
               >
                 <Compass className="w-3.5 h-3.5" />
-                Decision View
+                <span>Decision View</span>
+                <span className="text-[10px] text-[var(--text-muted)] font-mono ml-0.5 opacity-60">1</span>
               </button>
 
               <button
                 role="tab"
                 aria-selected={activeTab === 'accuracy'}
                 onClick={() => setActiveTab('accuracy')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-[3px] text-[12px] font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] text-[12px] font-medium transition-colors ${
                   activeTab === 'accuracy'
                     ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border-subtle)] font-semibold'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <BarChart3 className="w-3.5 h-3.5" />
-                Accuracy Analysis
+                <span>Accuracy Analysis</span>
+                <span className="text-[10px] text-[var(--text-muted)] font-mono ml-0.5 opacity-60">2</span>
               </button>
 
               <button
                 role="tab"
                 aria-selected={activeTab === 'evolution'}
                 onClick={() => setActiveTab('evolution')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-[3px] text-[12px] font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[3px] text-[12px] font-medium transition-colors ${
                   activeTab === 'evolution'
                     ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border-subtle)] font-semibold'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <GitCompare className="w-3.5 h-3.5" />
-                Forecast Evolution
+                <span>Forecast Evolution</span>
+                <span className="text-[10px] text-[var(--text-muted)] font-mono ml-0.5 opacity-60">3</span>
               </button>
             </nav>
 
@@ -113,11 +140,12 @@ export function App() {
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleTheme}
-                className="p-1.5 rounded-[4px] bg-[var(--bg-app)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)] transition-colors"
-                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                className="flex items-center gap-1 px-2 py-1 rounded-[4px] bg-[var(--bg-app)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)] transition-colors text-[11px]"
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode (Hotkey: T)`}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode (Hotkey: T)`}
               >
                 {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                <span className="text-[10px] text-[var(--text-muted)] font-mono">T</span>
               </button>
 
               <button

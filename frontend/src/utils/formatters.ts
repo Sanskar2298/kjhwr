@@ -74,3 +74,44 @@ export function formatPct(val: number | null | undefined, decimals = 1): string 
   if (val === null || val === undefined || isNaN(val)) return '--%';
   return val.toFixed(decimals) + '%';
 }
+
+/**
+ * Format currency in Great British Pounds (£) with comma grouping.
+ */
+export function formatGBP(val: number | null | undefined, decimals = 0): string {
+  if (val === null || val === undefined || isNaN(val)) return '£--';
+  return '£' + Math.round(val).toLocaleString('en-GB', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+/**
+ * Trigger client-side browser download of CSV string.
+ */
+export function exportToCsv(filename: string, rows: (string | number | null | undefined)[][]): void {
+  const csvContent = rows
+    .map((row) =>
+      row
+        .map((field) => {
+          if (field === null || field === undefined) return '';
+          const str = String(field);
+          return str.includes(',') || str.includes('"') || str.includes('\n')
+            ? `"${str.replace(/"/g, '""')}"`
+            : str;
+        })
+        .join(',')
+    )
+    .join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+

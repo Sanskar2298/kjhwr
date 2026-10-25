@@ -13,9 +13,10 @@ import {
   Legend,
   Cell,
 } from 'recharts';
+import { Download } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { KpiCard } from '../common/KpiCard';
-import { formatMW, formatPct } from '../../utils/formatters';
+import { formatMW, formatPct, exportToCsv } from '../../utils/formatters';
 
 interface AccuracyViewProps {
   cutoffHour: string;
@@ -91,8 +92,31 @@ export const AccuracyView: React.FC<AccuracyViewProps> = ({ cutoffHour }) => {
         </div>
 
         {summary && (
-          <div className="text-[12px] text-[var(--text-secondary)] tabular-nums">
-            {summary.n_intervals} settlement periods evaluated
+          <div className="flex items-center gap-3">
+            <div className="text-[12px] text-[var(--text-secondary)] tabular-nums">
+              {summary.n_intervals} settlement periods evaluated
+            </div>
+            <button
+              onClick={() => {
+                const headers = ["Metric", "Value", "Unit", "Description"];
+                const rows = [
+                  ["MAE", summary.mae_mw, "MW", "Mean Absolute Error"],
+                  ["RMSE", summary.rmse_mw, "MW", "Root Mean Square Error"],
+                  ["MeanBias", summary.mean_bias_mw, "MW", "Mean Bias (Forecast - Actual)"],
+                  ["P90AbsError", summary.p90_ae_mw, "MW", "90th Percentile Absolute Error"],
+                  ["NormalizedMAE", summary.nmae_pct, "%", "Normalized MAE vs Mean Actual"],
+                  ["R2", summary.r2, "scalar", "Coefficient of Determination"],
+                  ["EvaluatedPeriods", summary.n_intervals, "count", "Number of settlement periods"],
+                  ["CutoffGate", cutoffHour, "LondonTime", "Day-ahead D-1 decision cutoff"],
+                ];
+                exportToCsv(`wind_accuracy_summary_${startDate}_to_${endDate}_${cutoffHour.replace(':', '')}.csv`, [headers, ...rows]);
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-[3px] bg-[var(--bg-app)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)] text-[11px] font-medium transition-colors"
+              title="Export accuracy summary KPIs to CSV"
+            >
+              <Download className="w-3 h-3 text-[var(--color-forecast)]" />
+              <span>Export CSV</span>
+            </button>
           </div>
         )}
       </div>

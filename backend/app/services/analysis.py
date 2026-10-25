@@ -285,7 +285,8 @@ def compute_error_breakdowns(aligned_df: pd.DataFrame) -> Dict[str, pd.DataFrame
             "mae": g["abs_error_mw"].mean(),
             "rmse": np.sqrt((g["error_mw"] ** 2).mean()) if len(g) > 0 else np.nan,
             "mean_bias": g["error_mw"].mean(),
-        })
+        }),
+        include_groups=False,
     ).reset_index()
 
     # 2. By hour of day
@@ -297,7 +298,8 @@ def compute_error_breakdowns(aligned_df: pd.DataFrame) -> Dict[str, pd.DataFrame
             "mean_bias": g["error_mw"].mean(),
             "mean_actual": g["actual_mw"].mean(),
             "mean_forecast": g["forecast_mw"].mean(),
-        })
+        }),
+        include_groups=False,
     ).reset_index()
 
     # 3. By wind level bucket (Low, Medium, High)
@@ -312,7 +314,8 @@ def compute_error_breakdowns(aligned_df: pd.DataFrame) -> Dict[str, pd.DataFrame
             "rmse": np.sqrt((g["error_mw"] ** 2).mean()) if len(g) > 0 else np.nan,
             "mean_bias": g["error_mw"].mean(),
             "nmae_pct": (g["abs_error_mw"].mean() / g["actual_mw"].mean() * 100.0) if len(g) > 0 and g["actual_mw"].mean() > 0 else np.nan,
-        })
+        }),
+        include_groups=False,
     ).reset_index()
 
     # 4. By day
@@ -324,7 +327,8 @@ def compute_error_breakdowns(aligned_df: pd.DataFrame) -> Dict[str, pd.DataFrame
             "mean_bias": g["error_mw"].mean(),
             "mean_actual": g["actual_mw"].mean(),
             "mean_forecast": g["forecast_mw"].mean(),
-        })
+        }),
+        include_groups=False,
     ).reset_index()
 
     return {
@@ -395,7 +399,8 @@ def error_bands(
             "p10_delta": float(np.percentile(g["delta"], 10)) if len(g) >= 5 else np.nan,
             "p50_delta": float(np.percentile(g["delta"], 50)) if len(g) >= 5 else np.nan,
             "p90_delta": float(np.percentile(g["delta"], 90)) if len(g) >= 5 else np.nan,
-        })
+        }),
+        include_groups=False,
     ).reset_index()
 
     return bands
