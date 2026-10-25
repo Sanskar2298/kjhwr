@@ -34,7 +34,7 @@ format:
 	cd backend && ruff check --fix . && black .
 
 ingest:
-	python scripts/ingest_bmrs.py
+	python scripts/ingest.py
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
