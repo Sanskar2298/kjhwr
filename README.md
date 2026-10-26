@@ -15,6 +15,8 @@ An institutional-grade, full-stack decision-support and forecast accuracy evalua
 ### The Wholesale Power Problem
 Great Britain's electricity market operates on a Day-Ahead (D-1) auction cycle (EPEX SPOT and Nord Pool UK). Power traders formulate bids ahead of gate closure (commonly 09:00–12:00 London time) for 48 half-hour settlement periods across delivery day D. 
 
+Live Link : https://kjhwr-vxjh.vercel.app/
+ 
 Because wind is inherently intermittent:
 1. **Trading Desks need the latest available forecast at decision time.** Using forecasts published after the decision gate introduces illegal **lookahead bias** and ruins backtest validity.
 2. **Imbalance Cashout Exposure:** If outturn wind generation deviates from the contracted position, the utility is forced to settle the difference in the Balancing Mechanism at volatile System Buy/Sell Prices. Systemic over-forecasting forces utilities to spill energy at discounted rates.
